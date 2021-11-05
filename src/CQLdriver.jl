@@ -300,6 +300,22 @@ cqlstatementbind(statement::Ptr{CassStatement}, pos::Int, data::Int64) = cql_sta
 cqlstatementbind(statement::Ptr{CassStatement}, pos::Int, data::Float32) = cql_statement_bind_float(statement, pos, data)
 cqlstatementbind(statement::Ptr{CassStatement}, pos::Int, data::Float64) = cql_statement_bind_double(statement, pos, data)
 
+cqlstatementbind(statement::Ptr{CassStatement}, pos::Int, data::AbstractString) = CQLdriver.cql_statement_bind_string(statement, pos, String(data))
+cqlstatementbind(statement::Ptr{CassStatement}, pos::Int, data::UInt8) = CQLdriver.cql_statement_bind_int16(statement, pos, Int16(data))
+
+function cqlstatementbind(statement::Ptr{CassStatement}, pos::Int, data::UUID)
+    v::UInt128 = data.value
+    g1::UInt128 = (v >> 96) % UInt32
+    g2::UInt128 = (v >> 80) % UInt16
+    g3::UInt128 = (v >> 64) % UInt16
+    g4::UInt128 = (v >> 48) % UInt16
+    g5::UInt128 = (v) % (2 ^ 48)
+
+    fv = UInt128((g4 << 112) | (g5 << 64) | (g3 << 48) | (g2 << 32) | g1)
+    
+    cql_statement_bind_uuid(statement, pos, fv)
+end
+
 function cqlstatementbind(statement::Ptr{CassStatement}, pos::Int, data::Date)
     d = parse(UInt32, replace(string(data),"-" => ""))
     cql_statement_bind_uint32(statement, pos, d)
