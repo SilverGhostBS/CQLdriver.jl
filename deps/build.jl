@@ -26,11 +26,11 @@ if Sys.islinux()
         cass_target = "/tmp/cassandra-cpp-driver.deb"
         libuv_target = "/tmp/libuv.deb"
         libuv_dl = success(`wget -O $libuv_target $libuv_url`)
-        !libuv_dl && error("Unable to download libuv.")
+        !libuv_dl && error("Unable to download libuv. ", libuv_url)
         libuv_inst = success(`sudo dpkg -i $libuv_target`)
         !libuv_inst && error("Unable to install libuv driver.")
         dl = try success(`wget -O $cass_target $cass_source`) catch e false end
-        !dl && error("Unable to download CPP driver.")
+        !dl && error("Unable to download CPP driver.", cass_source)
         inst = try success(`sudo dpkg -i $cass_target`) catch e false end
         !inst && error("Unable to install CPP driver.")
     else
