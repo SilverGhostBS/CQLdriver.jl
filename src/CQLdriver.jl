@@ -134,8 +134,8 @@ function cqlvaltype(result::Ptr{CassResult}, idx::Int64)
     val == 0x0013 ? typ = Int16    : # SMALLINT
     val == 0x0011 ? typ = Date     : # DATE
     val == 0x0004 ? typ = Bool     : # BOOLEAN
-    val == 0x000C ? typ = UInt128  : # UUID
-    val == 0x000F ? typ = UInt128  : # TIMEUUID
+    val == 0x000C ? typ = UUID     : # UUID
+    val == 0x000F ? typ = UUID     : # TIMEUUID
     val == 0x000E ? typ = BigInt   : # VARINT
     val == 0x0010 ? typ = IPAddr   : # INET
     val == 0x0006 ? typ = BigFloat : # DECIMAL
