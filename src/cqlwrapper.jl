@@ -23,7 +23,7 @@ end
 libname = ""
 
 if Sys.islinux()
-    libname = libname
+    libname = "libcassandra.so.2"
 elseif Sys.iswindows()
     libname = "cassandra.dll"
 end
