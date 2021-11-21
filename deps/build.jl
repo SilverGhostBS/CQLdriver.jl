@@ -22,12 +22,8 @@ if Sys.islinux()
         cass_url = "http://downloads.datastax.com/cpp-driver/ubuntu/$(ubuntu_version)/cassandra/v" * version * "/"
         cass_file = "cassandra-cpp-driver_" * version * "-1_amd64.deb"
         cass_source = cass_url * cass_file
-        libuv_url = "http://downloads.datastax.com/cpp-driver/ubuntu/$(ubuntu_version)/dependencies/libuv/v1.23.0/libuv1_1.23.0-1_amd64.deb"
         cass_target = "/tmp/cassandra-cpp-driver.deb"
-        libuv_target = "/tmp/libuv.deb"
-        libuv_dl = success(`wget -O $libuv_target $libuv_url`)
-        !libuv_dl && error("Unable to download libuv. ", libuv_url)
-        libuv_inst = success(`sudo dpkg -i $libuv_target`)
+        libuv_inst = success(`sudo apt install libuv1`)
         !libuv_inst && error("Unable to install libuv driver.")
         dl = try success(`wget -O $cass_target $cass_source`) catch e false end
         !dl && error("Unable to download CPP driver.", cass_source)
