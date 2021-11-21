@@ -19,16 +19,20 @@ if Sys.islinux()
         !inst && error("Unable to install CPP driver.")
     elseif has_apt
         ubuntu_version = chomp(read(pipeline(`cat /etc/os-release`, `grep -Eo "VERSION_ID=\"[0-9\.]+\""`, `grep -Eo "[^\"]+"`, `grep -E "[0-9.]+"`), String))
-        cass_url = "http://downloads.datastax.com/cpp-driver/ubuntu/$(ubuntu_version)/cassandra/v" * version * "/"
-        cass_file = "cassandra-cpp-driver_" * version * "-1_amd64.deb"
-        cass_source = cass_url * cass_file
-        cass_target = "/tmp/cassandra-cpp-driver.deb"
-        libuv_inst = success(`sudo apt install libuv1`)
-        !libuv_inst && error("Unable to install libuv driver.")
-        dl = try success(`wget -O $cass_target $cass_source`) catch e false end
-        !dl && error("Unable to download CPP driver.", cass_source)
-        inst = try success(`sudo dpkg -i $cass_target`) catch e false end
-        !inst && error("Unable to install CPP driver.")
+        if (ubuntu_version > 10)
+            cass_url = "http://downloads.datastax.com/cpp-driver/ubuntu/$(ubuntu_version)/cassandra/v" * version * "/"
+            cass_file = "cassandra-cpp-driver_" * version * "-1_amd64.deb"
+            cass_source = cass_url * cass_file
+            cass_target = "/tmp/cassandra-cpp-driver.deb"
+            libuv_inst = success(`sudo apt install libuv1`)
+            !libuv_inst && error("Unable to install libuv driver.")
+            dl = try success(`wget -O $cass_target $cass_source`) catch e false end
+            !dl && error("Unable to download CPP driver.", cass_source)
+            inst = try success(`sudo dpkg -i $cass_target`) catch e false end
+            !inst && error("Unable to install CPP driver.")
+        else
+            println("Auto installation is not available for this OS version.")
+        end
     else
         error("This package requires cassandra-cpp-driver to be installed, but the build system only understands apt and yum.")
     end
