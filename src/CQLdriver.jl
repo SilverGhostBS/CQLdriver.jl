@@ -169,6 +169,12 @@ retrieve value using the correct type
 # Return
 - `out`: the return value, can by of any type
 """
+function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{UUID, Missing}}, strlen::Int)
+	num = Ref{CassUuid}(NULL_UUID)
+	err = cql_value_get_uuid(val, num)
+	return ifelse(err == CQL_OK, UUID(num[]), missing)
+end
+
 function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{CassUuid, Missing}}, strlen::Int)
 	num = Ref{CassUuid}(NULL_UUID)
 	err = cql_value_get_uuid(val, num)
