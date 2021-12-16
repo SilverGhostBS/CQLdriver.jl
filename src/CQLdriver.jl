@@ -290,7 +290,7 @@ end
 Bind data to a column in a statement for use with batch inserts
 # Arguments
 - `statement::Ptr{CassStatement}`: pointer to a statement
-- `pos::Int`: what column to put data into
+- `pos::Int`: what column to put data intoz
 - `typ::DataType, data)`: the datatype of the data
 # Return
 - `Void`:
