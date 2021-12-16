@@ -413,6 +413,7 @@ function cql_result_first_row(result::Ptr{CassResult})
             result)
     if row == C_NULL
         return Nothing
+    end
     return row::Ptr{CassRow}
 end
 
