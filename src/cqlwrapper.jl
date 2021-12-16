@@ -406,12 +406,14 @@ function cql_iterator_get_row(iterator::Ptr{CassIterator})
 end
 
 function cql_result_first_row(result::Ptr{CassResult})
-    val = ccall(
+    row = ccall(
             (:cass_result_first_row, libname),
             Ptr{CassRow},
             (Ptr{CassResult},),
             result)
-    return val::Ptr{CassRow}
+    if row == C_NULL
+        return Nothing
+    return row::Ptr{CassRow}
 end
 
 function cql_row_get_column(row::Ptr{CassRow}, pos::Int64)
