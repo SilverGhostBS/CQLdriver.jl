@@ -19,7 +19,7 @@ if Sys.islinux()
         !inst && error("Unable to install CPP driver.")
     elseif has_apt
         ubuntu_version = chomp(read(pipeline(`cat /etc/os-release`, `grep -Eo "VERSION_ID=\"[0-9\.]+\""`, `grep -Eo "[^\"]+"`, `grep -E "[0-9.]+"`), String))
-        if (ubuntu_version > 10)
+        if (parse(Int64, ubuntu_version) > 10)
             cass_url = "http://downloads.datastax.com/cpp-driver/ubuntu/$(ubuntu_version)/cassandra/v" * version * "/"
             cass_file = "cassandra-cpp-driver_" * version * "-1_amd64.deb"
             cass_source = cass_url * cass_file
