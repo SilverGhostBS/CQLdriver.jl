@@ -536,7 +536,7 @@ function cql_statement_bind_uuid(statement::Ptr{CassStatement}, pos::Int, data::
         statement, pos, CassUuid(data))
 end
 
-function cql_statement_bind_string(statement::Ptr{CassStatement}, pos::Int, data::String)
+function cql_statement_bind_string(statement::Ptr{CassStatement}, pos::Int, data::AbstractString)
     ccall(
         (:cass_statement_bind_string, libname),
         Nothing,
