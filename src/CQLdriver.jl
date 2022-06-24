@@ -4,9 +4,21 @@ module CQLdriver
 using DataFrames, Dates, StructArrays, IndexedTables
 using UUIDs: UUID
 
-export DataFrames, cqlinit, cqlclose, cqlwrite, cqlread, cqlexec, cql_uuid_gen_new, cql_uuid_gen_free, cql_uuid_gen_random
+export DataFrames,
+    cqlinit,
+    cqlclose,
+    cqlwrite,
+    cqlread,
+    cqlexec,
+    cql_uuid_gen_new,
+    cql_uuid_gen_free,
+    cql_uuid_gen_random,
+    CQL_OK
 
 include("cqlwrapper.jl")
+
+include("cqladdons.jl")
+
 const CQL_OK = 0x0000
 
 function Base.size(result::Ptr{CassResult})
@@ -51,13 +63,13 @@ Change the performance characteristics of your CQL driver
 - `cluster::Ptr{CassCluster}`: a pointer to the cluster
 - `err::UInt`: a 16 bit integer with an error code. No error returns 0
 """
-function cqlinit(hosts::String; username = "", password = "", whitelist = "", blacklist="", threads = 0, connections = 0, queuesize = 0, bytelimit = 0, requestlimit = 0)
+function cqlinit(hosts::String; username="", password="", whitelist="", blacklist="", threads=0, connections=0, queuesize=0, bytelimit=0, requestlimit=0)
     cluster = cql_cluster_new()
     session = cql_session_new()
 
     err = CQL_OK
     if username != ""
-	cql_cluster_set_credentials(cluster, username, password)
+        cql_cluster_set_credentials(cluster, username, password)
     end
     if threads != 0
         err = cql_cluster_set_concurrency(cluster, threads) | err
@@ -97,7 +109,7 @@ Check if a future contains any errors
 # Return
 - `err::UInt`: a 16 bit integer with an error code. No error returns 0
 """
-function cqlfuturecheck(future::Ptr{CassFuture}, caller::String = "")
+function cqlfuturecheck(future::Ptr{CassFuture}, caller::String="")
     err = cql_future_error_code(future)
     # only prints valid messages for client errors
     if err != CQL_OK
@@ -121,43 +133,43 @@ Takes a CassResult and returns the type in a given column
 - `typ`: the type of the value in the specified column
 """
 function cqlvaltype(result::Ptr{CassResult}, idx::Int64)
-# http://datastax.github.io/cpp-driver/api/cassandra.h/#enum-CassValueType
+    # http://datastax.github.io/cpp-driver/api/cassandra.h/#enum-CassValueType
     val = cql_result_column_type(result, idx)
-    val == 0x0009 ? typ = Int32    : # INTEGER
-    val == 0x0002 ? typ = Int64    : # BIGINT
-    val == 0x0005 ? typ = Int64    : # COUNTER
-    val == 0x0007 ? typ = Float64  : # DOUBLE
-    val == 0x0008 ? typ = Float32  : # FLOAT
-    val == 0x000A ? typ = String   : # TEXT
-    val == 0x000D ? typ = String      : # VARCHAR
+    val == 0x0009 ? typ = Int32 : # INTEGER
+    val == 0x0002 ? typ = Int64 : # BIGINT
+    val == 0x0005 ? typ = Int64 : # COUNTER
+    val == 0x0007 ? typ = Float64 : # DOUBLE
+    val == 0x0008 ? typ = Float32 : # FLOAT
+    val == 0x000A ? typ = String : # TEXT
+    val == 0x000D ? typ = String : # VARCHAR
     val == 0x000B ? typ = DateTime : # TIMESTAMP
-    val == 0x0014 ? typ = Int8     : # TINYINT
-    val == 0x0013 ? typ = Int16    : # SMALLINT
-    val == 0x0011 ? typ = Date     : # DATE
-    val == 0x0004 ? typ = Bool     : # BOOLEAN
-    val == 0x000C ? typ = UUID  : # UUID
-    val == 0x000F ? typ = UUID  : # TIMEUUID
-    val == 0x000E ? typ = BigInt   : # VARINT
-    val == 0x0010 ? typ = IPAddr   : # INET
+    val == 0x0014 ? typ = Int8 : # TINYINT
+    val == 0x0013 ? typ = Int16 : # SMALLINT
+    val == 0x0011 ? typ = Date : # DATE
+    val == 0x0004 ? typ = Bool : # BOOLEAN
+    val == 0x000C ? typ = UUID : # UUID
+    val == 0x000F ? typ = UUID : # TIMEUUID
+    val == 0x000E ? typ = BigInt : # VARINT
+    val == 0x0010 ? typ = IPAddr : # INET
     val == 0x0006 ? typ = BigFloat : # DECIMAL
-    val == 0x0012 ? typ = Missing      : # TIME
-    val == 0x0001 ? typ = Missing      : # ASCII
-    val == 0x0003 ? typ = Missing      : # BLOB
-    val == 0xFFFF ? typ = Missing      : # UNKNOWN
-    val == 0x0000 ? typ = Missing      : # CUSTOM
-    val == 0x0015 ? typ = Missing      : # DURATION
-    val == 0x0020 ? typ = Missing      : # LIST
-    val == 0x0021 ? typ = Missing      : # MAP
-    val == 0x0022 ? typ = Missing      : # SET
-    val == 0x0030 ? typ = Missing      : # UDT
-    val == 0x0031 ? typ = Missing      : # TUPLE
+    val == 0x0012 ? typ = Missing : # TIME
+    val == 0x0001 ? typ = Missing : # ASCII
+    val == 0x0003 ? typ = Missing : # BLOB
+    val == 0xFFFF ? typ = Missing : # UNKNOWN
+    val == 0x0000 ? typ = Missing : # CUSTOM
+    val == 0x0015 ? typ = Missing : # DURATION
+    val == 0x0020 ? typ = Missing : # LIST
+    val == 0x0021 ? typ = Missing : # MAP
+    val == 0x0022 ? typ = Missing : # SET
+    val == 0x0030 ? typ = Missing : # UDT
+    val == 0x0031 ? typ = Missing : # TUPLE
     typ = Missing
     if typ == Missing
         typ = UInt8
         println("Warning, unsupported datatype: $(num2hex(val))
         https://docs.datastax.com/en/developer/cpp-driver/2.8/api/cassandra.h/#enum-CassValueType")
     end
-    return Union{typ, Missing}
+    return Union{typ,Missing}
 end
 
 """
@@ -170,43 +182,43 @@ retrieve value using the correct type
 # Return
 - `out`: the return value, can by of any type
 """
-function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{UUID, Missing}}, strlen::Int)
-	num = get_null_cass_uuid_ref()
-	err = cql_value_get_uuid(val, num)
-	return ifelse(err == CQL_OK, UUID(num[]), missing)
+function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{UUID,Missing}}, strlen::Int)
+    num = get_null_cass_uuid_ref()
+    err = cql_value_get_uuid(val, num)
+    return ifelse(err == CQL_OK, UUID(num[]), missing)
 end
 
-function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Int64, Missing}}, strlen::Int)
+function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Int64,Missing}}, strlen::Int)
     num = Ref{Clonglong}(0)
     err = cql_value_get_int64(val, num)
     return ifelse(err == CQL_OK, num[], missing)
 end
 
-function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Bool, Missing}}, strlen::Int)
+function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Bool,Missing}}, strlen::Int)
     num = Ref{Cint}(0)
     err = cql_value_get_bool(val, num)
     return ifelse(err == CQL_OK, Bool(num[]), missing)
 end
 
-function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Int32, Missing}}, strlen::Int)
+function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Int32,Missing}}, strlen::Int)
     num = Ref{Cint}(0)
     err = cql_value_get_int32(val, num)
     return ifelse(err == CQL_OK, num[], missing)
 end
 
-function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Int16, Missing}}, strlen::Int)
+function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Int16,Missing}}, strlen::Int)
     num = Ref{Cshort}(0)
     err = cql_value_get_int16(val, num)
     return ifelse(err == CQL_OK, num[], missing)
 end
 
-function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Int8, Missing}}, strlen::Int)
+function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Int8,Missing}}, strlen::Int)
     num = Ref{Cshort}(0)
     err = cql_value_get_int8(val, num)
     return ifelse(err == CQL_OK, num[], missing)
 end
 
-function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{String, Missing}}, strlen::Int)
+function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{String,Missing}}, strlen::Int)
     str = Vector{UInt8}(undef, strlen)
     strref = Ref{Ptr{UInt8}}(pointer(str))
     siz = Ref{Csize_t}(sizeof(str))
@@ -214,31 +226,31 @@ function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{String, Missing}}, strle
     return ifelse(err == CQL_OK, unsafe_string(strref[], siz[]), missing)
 end
 
-function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Float64, Missing}}, strlen::Int)
+function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Float64,Missing}}, strlen::Int)
     num = Ref{Cdouble}(0)
     err = cql_value_get_double(val, num)
     return ifelse(err == CQL_OK, num[], missing)
 end
 
-function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Float32, Missing}}, strlen::Int)
+function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Float32,Missing}}, strlen::Int)
     num = Ref{Cfloat}(0)
     err = cql_value_get_float(val, num)
     return ifelse(err == CQL_OK, num[], missing)
 end
 
-function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Date, Missing}}, strlen::Int)
+function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{Date,Missing}}, strlen::Int)
     num = Ref{Cuint}(0)
     err = cql_value_get_uint32(val, num)
     s = string(num[])
     l = length(s)
-    o = ifelse(l == 8, s[1:4]*"-"*s[5:6]*"-"*s[7:8], "")
+    o = ifelse(l == 8, s[1:4] * "-" * s[5:6] * "-" * s[7:8], "")
     return ifelse(err == CQL_OK, Date(o), missing)
 end
 
-function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{DateTime, Missing}}, strlen::Int)
+function cqlgetvalue(val::Ptr{CassValue}, T::Type{Union{DateTime,Missing}}, strlen::Int)
     unixtime = Ref{Clonglong}(0)
     err = cql_value_get_int64(val, unixtime)
-    return ifelse(err == CQL_OK, Dates.unix2datetime(unixtime[]/1000), missing)
+    return ifelse(err == CQL_OK, Dates.unix2datetime(unixtime[] / 1000), missing)
 end
 
 cqlgetvalue(val::Ptr{CassValue}, T::Type{Union}, strlen::Int) = missing
@@ -253,7 +265,7 @@ create a prepared query string for use with batch inserts
 # Return
 - `out::String`: a valid INSERT or UPDATE query
 """
-function cqlstrprep(table::String, data::Union{IndexedTable, AbstractDataFrame}; update::Union{IndexedTable, AbstractDataFrame, Nothing}=nothing, counter::Bool=false)
+function cqlstrprep(table::String, data::Union{IndexedTable,AbstractDataFrame}; update::Union{IndexedTable,AbstractDataFrame,Nothing}=nothing, counter::Bool=false)
     out = ""
     if update == nothing
         datacolnames = string.(cass_col_names(data))
@@ -264,13 +276,14 @@ function cqlstrprep(table::String, data::Union{IndexedTable, AbstractDataFrame};
             vals = vals * "?,"
         end
         out = "INSERT INTO " * table * " (" * cols[1:end-1] * ") VALUES (" * vals[1:end-1] * ")"
-    else write == :update
+    else
+        write == :update
         datacolnames = string.(cass_col_names(data))
         updtcolnames = string.(cass_col_names(update))
         cols, vals = "", ""
         for c in datacolnames
 
-            cols = cols * c * "=" * ifelse(counter, c*"+?, ", "?, ")
+            cols = cols * c * "=" * ifelse(counter, c * "+?, ", "?, ")
         end
         for u in updtcolnames
             vals = vals * u * "=? AND "
@@ -304,12 +317,12 @@ cqlstatementbind(statement::Ptr{CassStatement}, pos::Int, data::Float64) = cql_s
 cqlstatementbind(statement::Ptr{CassStatement}, pos::Int, data::UInt8) = CQLdriver.cql_statement_bind_int16(statement, pos, Int16(data))
 
 function cqlstatementbind(statement::Ptr{CassStatement}, pos::Int, data::Date)
-    d = parse(UInt32, replace(string(data),"-" => ""))
+    d = parse(UInt32, replace(string(data), "-" => ""))
     cql_statement_bind_uint32(statement, pos, d)
 end
 
 function cqlstatementbind(statement::Ptr{CassStatement}, pos::Int, data::DateTime)
-    d = convert(Int64, Dates.datetime2unix(data)*1000)
+    d = convert(Int64, Dates.datetime2unix(data) * 1000)
     cql_statement_bind_int64(statement, pos, d)
 end
 
@@ -329,7 +342,7 @@ end
 
 function _cqlresultscheck(session::Ptr{CassSession}, statement::Ptr{CassStatement}, retries::Int)
     future = nothing
-    while(true)
+    while (true)
         future = cql_session_execute(session, statement)
         err = cqlfuturecheck(future, "Session Execute")
         err == CQL_OK && break
@@ -350,7 +363,7 @@ function _cqlprocessresult!(result::Ptr{CassResult}, output_arr::StructArray{NT}
     @inbounds for r = eachindex(output_arr)
         cql_iterator_next(iterator)
         row = cql_iterator_get_row(iterator)
-        output_arr[r] = NT(Tuple([cqlgetvalue(cql_row_get_column(row, c-1), types[c], strlen) for c = 1:cols]))
+        output_arr[r] = NT(Tuple([cqlgetvalue(cql_row_get_column(row, c - 1), types[c], strlen) for c = 1:cols]))
     end
     morepages = cql_result_has_more_pages(result)
     cql_statement_set_paging_state(statement, result)
@@ -398,23 +411,23 @@ function cqlread(session::Ptr{CassSession}, query::String; pgsize::Int=10000, re
     rows, cols = size(result)
 
     # define all the types we will need
-    types = [cqlvaltype(result, c-1) for c = 1:cols]
+    types = [cqlvaltype(result, c - 1) for c = 1:cols]
     names = Array{Symbol}(UndefInitializer(), cols)
 
     @inbounds for c = eachindex(names)
         str = zeros(UInt8, strlen)
         strref = Ref{Ptr{UInt8}}(pointer(str))
         siz = Ref{Csize_t}(sizeof(str))
-        errcol = cql_result_column_name(result, c-1, strref, siz)
-        names[c] = Symbol(ifelse(errcol == CQL_OK, unsafe_string(strref[], siz[]), string("C",c)))
+        errcol = cql_result_column_name(result, c - 1, strref, siz)
+        names[c] = Symbol(ifelse(errcol == CQL_OK, unsafe_string(strref[], siz[]), string("C", c)))
     end
-    NT = NamedTuple{Tuple(names), Tuple{types...}}
+    NT = NamedTuple{Tuple(names),Tuple{types...}}
     SA_Type = StructArray{NT}
     output = SA_Type(undef, rows)
 
     morepages = _cqlprocessresult!(result, output, statement, types, cols, strlen)
 
-    while(morepages)
+    while (morepages)
         err, future = _cqlresultscheck(session, statement, retries)
         if err != CQL_OK
             return err::UInt16, output::SA_Type
@@ -439,7 +452,7 @@ function cqlread(session::Ptr{CassSession}, queries::Array{String}; concurrency:
     err = CQL_OK
 
     for query in 1:concurrency:length(queries)
-        concurrency = ifelse(length(queries)-query < concurrency, length(queries)-query+1, concurrency)
+        concurrency = ifelse(length(queries) - query < concurrency, length(queries) - query + 1, concurrency)
 
         futures = Array{Ptr{CassFuture}}(UndefInitializer(), 0)
         for c in 1:concurrency
@@ -453,7 +466,7 @@ function cqlread(session::Ptr{CassSession}, queries::Array{String}; concurrency:
         for f in 1:length(futures)
             retry = retries
             future = futures[f]
-            while(true)
+            while (true)
                 futerr = cqlfuturecheck(future, "Async Read")
                 if futerr == CQL_OK
                     push!(results, cql_future_get_result(future))
@@ -482,7 +495,7 @@ function cqlread(session::Ptr{CassSession}, queries::Array{String}; concurrency:
             @inbounds for r = eachindex(sa)
                 cql_iterator_next(iterator)
                 row = cql_iterator_get_row(iterator)
-                sa[r] = NT(Tuple([cqlgetvalue(cql_row_get_column(row, c-1), types[c], strlen) for c = 1:cols]))
+                sa[r] = NT(Tuple([cqlgetvalue(cql_row_get_column(row, c - 1), types[c], strlen) for c = 1:cols]))
             end
             push!(out, sa)
             cql_iterator_free(iterator)
@@ -496,15 +509,15 @@ function cqlbuilddf(result::Ptr{CassResult}, strlen::Int)
     rows, cols = size(result)
     types = Array{Union}(UndefInitializer(), cols)
     for c in 1:cols
-        types[c] = cqlvaltype(result, c-1)
+        types[c] = cqlvaltype(result, c - 1)
     end
     names = Array{Symbol}(UndefInitializer(), cols)
     for c in 1:cols
         str = zeros(UInt8, strlen)
         strref = Ref{Ptr{UInt8}}(pointer(str))
         siz = Ref{Csize_t}(sizeof(str))
-        errcol = cql_result_column_name(result, c-1, strref, siz)
-        names[c] = Symbol(ifelse(errcol == CQL_OK, unsafe_string(strref[], siz[]), string("C",c)))
+        errcol = cql_result_column_name(result, c - 1, strref, siz)
+        names[c] = Symbol(ifelse(errcol == CQL_OK, unsafe_string(strref[], siz[]), string("C", c)))
     end
     output = DataFrame(types, names, 0)
     return output::DataFrame, types::Array{Union}
@@ -512,16 +525,16 @@ end
 
 function cqlbuildstructarray(result::Ptr{CassResult}, strlen::Int)
     rows, cols = size(result)
-    types = [cqlvaltype(result, c-1) for c = 1:cols]
+    types = [cqlvaltype(result, c - 1) for c = 1:cols]
     names = Array{Symbol}(UndefInitializer(), cols)
     for c in 1:cols
         str = zeros(UInt8, strlen)
         strref = Ref{Ptr{UInt8}}(pointer(str))
         siz = Ref{Csize_t}(sizeof(str))
-        errcol = cql_result_column_name(result, c-1, strref, siz)
-        names[c] = Symbol(ifelse(errcol == CQL_OK, unsafe_string(strref[], siz[]), string("C",c)))
+        errcol = cql_result_column_name(result, c - 1, strref, siz)
+        names[c] = Symbol(ifelse(errcol == CQL_OK, unsafe_string(strref[], siz[]), string("C", c)))
     end
-    NT = NamedTuple{Tuple(names), Tuple{types...}}
+    NT = NamedTuple{Tuple(names),Tuple{types...}}
     SA_Type = StructArray{NT}
     output = SA_Type(undef, rows)
     return output::SA_Type, types
@@ -540,7 +553,7 @@ Write a set of rows to a table as a prepared batch
 # Return
 - `err::UInt16`: status of the batch insert
 """
-function cqlbatchwrite(session::Ptr{CassSession}, cass_table::String, data::AbstractDataFrame; retries::Int=5, update::Union{AbstractDataFrame, Nothing}=nothing, counter::Bool=false)
+function cqlbatchwrite(session::Ptr{CassSession}, cass_table::String, data::AbstractDataFrame; retries::Int=5, update::Union{AbstractDataFrame,Nothing}=nothing, counter::Bool=false)
     query = cqlstrprep(cass_table, data, update=update, counter=counter)
     future = cql_session_prepare(session, query)
     cql_future_wait(future)
@@ -564,12 +577,12 @@ function cqlbatchwrite(session::Ptr{CassSession}, cass_table::String, data::Abst
     for r in 1:rows
         statement = cql_prepared_bind(prep)
         for c in 1:cols
-            cqlstatementbind(statement, c-1, frame[r,c])
+            cqlstatementbind(statement, c - 1, frame[r, c])
         end
         cql_batch_add_statement(batch, statement)
         cql_statement_free(statement)
     end
-    while(true)
+    while (true)
         future = cql_session_execute_batch(session, batch)
         cql_future_wait(future)
         err = cqlfuturecheck(future, "Execute Batch")
@@ -584,7 +597,7 @@ function cqlbatchwrite(session::Ptr{CassSession}, cass_table::String, data::Abst
     return err::UInt16
 end
 
-function cqlbatchwrite(session::Ptr{CassSession}, table::String, data::IndexedTable; retries::Int=5, update::Union{IndexedTable, Nothing}=nothing, counter::Bool=false)
+function cqlbatchwrite(session::Ptr{CassSession}, table::String, data::IndexedTable; retries::Int=5, update::Union{IndexedTable,Nothing}=nothing, counter::Bool=false)
     query = cqlstrprep(table, data, update=update, counter=counter)
     future = cql_session_prepare(session, query)
     cql_future_wait(future)
@@ -608,12 +621,12 @@ function cqlbatchwrite(session::Ptr{CassSession}, table::String, data::IndexedTa
     for r in 1:rows
         statement = cql_prepared_bind(prep)
         for c in 1:cols
-            cqlstatementbind(statement, c-1, columns(frame)[c][r])
+            cqlstatementbind(statement, c - 1, columns(frame)[c][r])
         end
         cql_batch_add_statement(batch, statement)
         cql_statement_free(statement)
     end
-    while(true)
+    while (true)
         future = cql_session_execute_batch(session, batch)
         cql_future_wait(future)
         err = cqlfuturecheck(future, "Execute Batch")
@@ -642,7 +655,7 @@ Write one row of data to a table
 - `err::UInt16`: status of the insert
 """
 
-function cqlrowwrite(session::Ptr{CassSession}, cass_table::String, data::Union{DataFrame, IndexedTable}; retries::Int=5, update::Union{DataFrame, IndexedTable, Nothing} = nothing, counter::Bool = false)
+function cqlrowwrite(session::Ptr{CassSession}, cass_table::String, data::Union{DataFrame,IndexedTable}; retries::Int=5, update::Union{DataFrame,IndexedTable,Nothing}=nothing, counter::Bool=false)
     err = CQL_OK
     query = cqlstrprep(cass_table, data, update=update, counter=counter)
     rows, cols = size(data)
@@ -654,10 +667,10 @@ function cqlrowwrite(session::Ptr{CassSession}, cass_table::String, data::Union{
     end
     statement = cql_statement_new(query, cols)
     for c in 1:cols
-        cqlstatementbind(statement, c-1, cass_tbl_select(frame, c, 1))
+        cqlstatementbind(statement, c - 1, cass_tbl_select(frame, c, 1))
     end
 
-    while(true)
+    while (true)
         future = cql_session_execute(session, statement)
         cql_future_wait(future)
         err = cqlfuturecheck(future, "Execute Statement")
@@ -685,7 +698,7 @@ Write to a table
 # Return
 - `err::UInt16`: status of the insert
 """
-function cqlwrite(s::Ptr{CassSession}, cass_table::String, data::Union{DataFrame, IndexedTable}; update::Union{DataFrame, IndexedTable, Nothing}=nothing, batchsize::Int=500, retries::Int=5, counter::Bool=false, returnanyerror=false)
+function cqlwrite(s::Ptr{CassSession}, cass_table::String, data::Union{DataFrame,IndexedTable}; update::Union{DataFrame,IndexedTable,Nothing}=nothing, batchsize::Int=500, retries::Int=5, counter::Bool=false, returnanyerror=false)
     rows, cols = size(data)
     rows == 0 && return 0x9999
     err = CQL_OK
@@ -702,7 +715,7 @@ function cqlwrite(s::Ptr{CassSession}, cass_table::String, data::Union{DataFrame
             if p < pages
                 @async errs[p] = cqlbatchwrite(s, cass_table, cass_tbl_slice(data, fr, to), retries=retries, update=update == nothing ? nothing : cass_tbl_slice(update, fr, to), counter=counter)
             else
-                @async errs[p] = cqlbatchwrite(s, cass_table, cass_tbl_slice(data, fr, cass_get_lastindex(data)), retries=retries, update=update==nothing ? nothing : cass_tbl_slice(update, fr, cass_get_lastindex(update)), counter=counter)
+                @async errs[p] = cqlbatchwrite(s, cass_table, cass_tbl_slice(data, fr, cass_get_lastindex(data)), retries=retries, update=update == nothing ? nothing : cass_tbl_slice(update, fr, cass_get_lastindex(update)), counter=counter)
             end
         end
         reterr = union(errs)
