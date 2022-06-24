@@ -33,6 +33,9 @@ function preparestatement(f::Function, query::AbstractString, nbparams::Integer;
     statement = CQLdriver.cql_statement_new(query, nbparams)
     CQLdriver.cql_statement_set_request_timeout(statement, timeout)
     CQLdriver.cql_statement_set_paging_size(statement, pgsize)
-    f(statement)
-    free(statement)
+    try
+        f(statement)
+    finally
+        free(statement)
+    end
 end
