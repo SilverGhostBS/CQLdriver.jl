@@ -1,4 +1,4 @@
-export PreparedStatement, Future, Result, Iterator, free, preparestatement
+export PreparedStatement, Future, Result, Iterator, free, preparestatement, getresult
 
 const PreparedStatement = Ptr{CQLdriver.CassStatement}
 const Future = Ptr{CQLdriver.CassFuture}
