@@ -29,7 +29,7 @@ function preparestatement(query::AbstractString, nbparams::Integer; pgsize::Int=
     return statement
 end
 
-function preparestatement(f::Function, query::AbstractString, nbparams::Integer; pgsize::Int=10000, timeout::Int=10000)::PreparedStatement
+function preparestatement(f::Function, query::AbstractString, nbparams::Integer; pgsize::Int=10000, timeout::Int=10000)
     statement = CQLdriver.cql_statement_new(query, nbparams)
     CQLdriver.cql_statement_set_request_timeout(statement, timeout)
     CQLdriver.cql_statement_set_paging_size(statement, pgsize)
@@ -37,5 +37,15 @@ function preparestatement(f::Function, query::AbstractString, nbparams::Integer;
         f(statement)
     finally
         free(statement)
+    end
+end
+
+function getresult(f::Function, future::Future)
+    result = CQLdriver.cql_future_get_result(future)
+    free(future)
+    try
+        f(result)
+    finally
+        free(result)
     end
 end
